@@ -5,3 +5,6 @@ This is a simple olx bot. It picks its params (email, search query) from a web f
 Use OLX private APi ('/api/items?query={"filters":{},"text":"kindle","sorting":"desc-creation"}')<br>
 Schedule task <br>
 Make web form
+
+# Comments
+Private API works, Populate headers 
