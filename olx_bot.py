@@ -32,6 +32,9 @@ def main():
     and id is stored in stored_ids
     '''
 
+    # UNQUOTE THIS
+    # WORKS! https://www.olx.co.ug/api/items?query={%22filters%22:{},%22text%22:%22kindle%22,%22sorting%22:%22desc-creation%22}
+
     for email, search_term in bot_tasks.items():
 
         search_url = "https://www.olx.co.ug/nf/items/q-" + "-".join(search_term.strip().split())
