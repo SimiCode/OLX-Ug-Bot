@@ -1,0 +1,13 @@
+:authority: www.olx.co.ug
+:method: GET
+:path: /api/items?query={%22filters%22:{},%22text%22:%22kindle%22,%22sorting%22:%22desc-creation%22}
+:scheme: https
+accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+accept-encoding: gzip, deflate, br
+accept-language: en-US,en;q=0.9
+cache-control: max-age=0
+cookie: optimizelyId=66115288-9390-41bc-a380-089f9c4cc7d7; ldTd=true; 30067a00309fd87576a1bc675141543e=c1431fc122f15e709d619afd531eac13; onap=163a9f747f2x1bb1e62e-4-163e23c3ef4x5a284a05-12-1528510815
+dnt: 1
+if-none-match: W/"39a75c437696981061fd37ab0d4cbbf6"
+upgrade-insecure-requests: 1
+user-agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Mobile Safari/537.36
