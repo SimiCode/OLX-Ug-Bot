@@ -84,7 +84,7 @@ def main():
 def email_subscriber(product_url):
 
     # formulate the email body
-    body = 'Subject: NEW SALE \n\nHi there,\n    See a new product up for sale here '+ product_url +' \n\nYours, Bot'
+    body = 'Subject: NEW SALE AT OLX\n\nHi there,\n    See a new product up for sale here '+ product_url +' \n\nYours, Bot'
 
     try:
         smtpObj = smtplib.SMTP('smtp.gmail.com', 587)
@@ -115,8 +115,7 @@ def email_subscriber(product_url):
 
 if __name__ == '__main__':
 
-    simi.xdump( 'olx_history.txt', [] )
-
+    # simi.xdump( 'olx_history.txt', [] )
     # simi.xdump('olx_tasks.pickle', {'abahedison1@outlook.com':'kindle'})
 
     # tasks tbd
@@ -153,6 +152,10 @@ if __name__ == '__main__':
 
 
 if 0:
+     from urllib.parse import unquote
+     unquote("\u002Fapi\u002Fitems?query=%7B%22filter")
+
+
     test = '''
             window.__APP = {
                 props: {"lang":"en","region":"mea","location":{"pathname":"\u002Fnf\u002Fitems\u002Fq-kindle","search":"","hash":"","action":"POP","key":"830h9a","query":{},"hostname":"www.olx.co.ug"},"environment":"production"},
