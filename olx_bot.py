@@ -9,11 +9,13 @@
 
 import re
 import json
-import configparser
-import smtplib
 import requests
-from bs4 import BeautifulSoup
+# from bs4 import BeautifulSoup
 import simi
+
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 
 __author__ = "J Edison Abahurire"
@@ -37,83 +39,67 @@ def main():
 
     for email, search_term in bot_tasks.items():
 
-        search_url = "https://www.olx.co.ug/nf/items/q-" + "-".join(search_term.strip().split())
+        search_url = "https://www.olx.co.ug/api/items?query={%22filters%22:{},%22text%22:%22"+ "%20".join(search_term.strip().split()) +"%22,%22sorting%22:%22desc-creation%22}"
+        # sample: "https://www.olx.co.ug/api/items?query={%22filters%22:{},%22text%22:%22kindle%22,%22sorting%22:%22desc-creation%22}"
         print(search_url)
 
-        source = requests.get(search_url).text
-        soup = BeautifulSoup(source, 'html.parser')
-        # print(soup)
+        headers = {
+             'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+             'accept-encoding': 'gzip, deflate, br',
+             'accept-language': 'en-US,en;q=0.9',
+             'authority': 'www.olx.co.ug',
+             'cache-control': 'max-age=0',
+             'cookie': 'optimizelyId=66115288-9390-41bc-a380-089f9c4cc7d7; ldTd=true; onap=163a9f747f2x1bb1e62e-4-163e23c3ef4x5a284a05-12-1528510815; 30067a00309fd87576a1bc675141543e=52e0d967addf08eed11644c4d96c2737',
+             'dnt': '1',
+             'if-none-match': 'W/"7f29b2d7da6e4ac830477a717d8a7dbf"',
+             'method': 'GET',
+             'path': '/api/items?query={%22filters%22:{},%22text%22:%22kindle%22,%22sorting%22:%22desc-creation%22}',
+             'scheme': 'https',
+             'upgrade-insecure-requests': '1',
+             'user-agent': 'Mozilla/5.0 (Linux; Android 8.0.0; Pixel 2 XL Build/OPD1.170816.004) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Mobile Safari/537.36'
+        }
 
-        scriptags = soup.find_all("script")
-        print(len(scriptags), 'scriptags found in from soup', '\n')
+        response_json = json.loads(requests.get(search_url, headers=headers).text)
 
-        for tag in scriptags:
+        results = response_json['data']
+        print(len(results), ' = len of results', '\n')
+        # print(elements)
 
-            if "window.__APP = " in tag.text:
-                tag_text = tag.text
+        for item in results:
+            item_id = item['id']
 
-                data = re.search(r"window.__APP = (.*?);$", tag_text.strip().replace('\n', '') ).group(1)
-                # print(data)
-                # print(1)
+            if not item_id in stored_ids:
 
-                # stringify key names in json
-                keys = ['props', 'states', 'config', 'translations']
-                for i in keys:
-                    data = data.replace(i+':', '"'+i+'":')
+                title = item['title']
+                product_url = 'https://www.olx.co.ug/item/' + "-".join(title.lower().split()) + '-iid-' + item_id
+                print(product_url)
+                # send email
+                send_mail(email, search_term, product_url)
+                # store product id
+                stored_ids.append(item_id)
+            else:
+                print('Product already scraped')
 
-                items = (json.loads(data)['states']['items'], '\n')
-                results = items[0]['elements']
-                print(len(results), ' = len of results', '\n')
-                # print(elements)
-
-                for k, v in results.items():
-                    if not k in stored_ids:
-                        title = v['title']
-                        product_id = k
-                        product_url = 'https://www.olx.co.ug/item/' + "-".join(title.lower().split()) + '-iid-' + product_id
-                        print(product_url)
-                        # send email
-                        email_subscriber(product_url)
-                        # store product id
-                        stored_ids.append(product_id)
-                    else:
-                        print('Product already in indexed')
-
-        # add new ids to history list
-        simi.xdump( 'olx_history.txt', list(set(stored_ids)) )
+    # add new ids to history list after all searches have been made
+    simi.xdump( 'olx_history.txt', list(set(stored_ids)) )
 
 
+def send_mail(subscriber_email, search_term, product_url):
 
-def email_subscriber(product_url):
+    msg = MIMEMultipart()
+    body = 'Your serach a new product up for sale here : '+ product_url +' \n\nYours, Bot'
 
-    # formulate the email body
-    body = 'Subject: NEW SALE AT OLX\n\nHi there,\n    See a new product up for sale here '+ product_url +' \n\nYours, Bot'
+    msg['From'] = "sales@botsmart.uk"
+    msg['To'] = subscriber_email
+    msg['Subject'] = "OLX - " + search_term
 
-    try:
-        smtpObj = smtplib.SMTP('smtp.gmail.com', 587)
-    except Exception as e:
-        print(e)
-        smtpObj = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-
-    try:
-        smtpObj.ehlo()
-        smtpObj.starttls()
-        # smtpObj.login(bot_email, bot_password)
-        # smtpObj.sendmail(bot_email, owner_email, body)
-        # smtpObj.sendmail(bot_email, bot_father, body)
-        smtpObj.login(alternative_email, alternative_email_password)
-        smtpObj.sendmail(alternative_email, bot_father, body)
-        smtpObj.quit()
-        return True
-    except Exception as e:
-        with open("ERRORS_rec.txt", 'ab') as lo:
-            lo.write(str(e).encode('utf-8') +'\n')
-        return False
-
-
-
-
-
+    msg.attach(MIMEText(body, 'plain'))
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login(msg['From'], "G0d15G00d")
+    text = msg.as_string()
+    server.sendmail(msg['From'], msg['To'], text)
+    server.quit()
 
 
 if __name__ == '__main__':
@@ -122,19 +108,11 @@ if __name__ == '__main__':
     # simi.xdump('olx_tasks.pickle', {'abahedison1@outlook.com':'kindle'})
 
     # tasks tbd
-    bot_tasks = simi.xload('olx_tasks.pickle')
+    bot_tasks = simi.xload('/home/bots/subscriptions.olx')
     # bot_tasks = {}
 
     # store of products already indexed
-    stored_ids = simi.xload('olx_history.txt')
-
-    # open config file
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-
-    alternative_email = config.get('Bot', 'alternative_email')
-    alternative_email_password = config.get('Bot', 'alternative_email_password')
-    bot_father = config.get('Bot', 'bot_father')
+    stored_ids = simi.xload('/home/bots/olx_history.txt')
 
     main()
 
@@ -155,8 +133,8 @@ if __name__ == '__main__':
 
 
 if 0:
-     from urllib.parse import unquote
-     unquote("\u002Fapi\u002Fitems?query=%7B%22filter")
+    from urllib.parse import unquote
+    unquote("\u002Fapi\u002Fitems?query=%7B%22filter")
 
 
     test = '''
@@ -218,8 +196,8 @@ if 0:
     for k, v in results.items():
         if not k in stored_ids:
             title = v['title']
-            product_id = k
-            product_url = 'https://www.olx.co.ug/item/' + "-".join(title.lower().split()) + '-iid-' + product_id
+            item_id = k
+            product_url = 'https://www.olx.co.ug/item/' + "-".join(title.lower().split()) + '-iid-' + item_id
             print(product_url)
 
 
