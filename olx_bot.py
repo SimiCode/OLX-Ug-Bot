@@ -7,18 +7,19 @@
    of the product to the subscribed user
 """
 
-# import re
 import json
 import requests
-# from bs4 import BeautifulSoup
+import configparser
+
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 
 import sys
 sys.path.insert(0, '/home/bots/')
 import simi
 
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 
 __author__ = "J Edison Abahurire"
@@ -37,13 +38,9 @@ def main():
     and id is stored in stored_ids
     '''
 
-    # UNQUOTE THIS
-    # WORKS! https://www.olx.co.ug/api/items?query={%22filters%22:{},%22text%22:%22kindle%22,%22sorting%22:%22desc-creation%22}
-
     for email, search_term in bot_tasks.items():
 
         search_url = "https://www.olx.co.ug/api/items?query={%22filters%22:{},%22text%22:%22"+ "%20".join(search_term.strip().split()) +"%22,%22sorting%22:%22desc-creation%22}"
-        # sample: "https://www.olx.co.ug/api/items?query={%22filters%22:{},%22text%22:%22kindle%22,%22sorting%22:%22desc-creation%22}"
         print(search_url)
 
         headers = {
@@ -62,15 +59,19 @@ def main():
              'user-agent': 'Mozilla/5.0 (Linux; Android 8.0.0; Pixel 2 XL Build/OPD1.170816.004) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Mobile Safari/537.36'
         }
 
+        # query the API and convert its response to json/dictionary
         response_json = json.loads(requests.get(search_url, headers=headers).text)
 
+        # this will get us a list of ad results
         results = response_json['data']
         print(len(results), ' = len of results', '\n')
         # print(elements)
 
+        # iterate through the results list
         for item in results:
             item_id = item['id']
 
+            # stored ids atre the products already seen before, we store them using their id attrib from the json
             if not item_id in stored_ids:
 
                 title = item['title']
@@ -90,6 +91,7 @@ def main():
 
 def send_mail(subscriber_email, search_term, product_url):
 
+    # send out an email
     msg = MIMEMultipart()
     body = 'Your serach a new product up for sale here : '+ product_url +' \n\nYours, Bot'
 
@@ -100,16 +102,20 @@ def send_mail(subscriber_email, search_term, product_url):
     msg.attach(MIMEText(body, 'plain'))
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.starttls()
-    server.login(msg['From'], "G0d15G00d")
+    server.login(msg['From'], email_password)
     text = msg.as_string()
     server.sendmail(msg['From'], msg['To'], text)
     server.quit()
 
 
+
 if __name__ == '__main__':
 
-    # simi.xdump( 'olx_history.txt', [] )
-    # simi.xdump('olx_tasks.pickle', {'abahedison1@outlook.com':'kindle'})
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+
+    # collect the password from an external document
+    email_password = config.get('BotsMart-Sales', 'email_password')
 
     # tasks tbd
     bot_tasks = simi.xload('/home/bots/subscriptions.olx')
